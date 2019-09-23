@@ -33,23 +33,49 @@ class Netgsm
         $this->lang = $config->get('netgsm.language');
         $this->http = new Client([
             "base_uri" => $this->url,
-            "timeout" => 10
+            "timeout" => 10,
         ]);
+    }
+
+    public function setUsername($username)
+    {
+        if (!empty($username)) {
+            $this->username = $username;
+        }
+    }
+
+    public function setPassword($password)
+    {
+        if (!empty($password)) {
+            $this->password = $password;
+        }
+    }
+
+    public function setHeader($header)
+    {
+        if (!empty($header)) {
+            $this->header = $header;
+        }
     }
 
     public function sendSms($number, $message, $header = null, $startDate = null, $endDate = null, $lang = null)
     {
         $numbers = [];
-        if (is_array($number))
-            foreach ($number as $num)
+        if (is_array($number)) {
+            foreach ($number as $num) {
                 $numbers[] = $num;
-        else
+            }
+        } else {
             $numbers[] = $number;
+        }
 
-        if (is_null($header))
+        if (is_null($header)) {
             $header = $this->header;
-        if (is_null($lang))
+        }
+
+        if (is_null($lang)) {
             $lang = $this->lang;
+        }
 
         $query = [
             'usercode' => $this->username,
@@ -59,26 +85,27 @@ class Netgsm
             'msgheader' => $header,
             'startdate' => $startDate,
             'stopdate' => $endDate,
-            'dil' =>$lang
+            'dil' => $lang,
         ];
 
         $response = $this->http->request('GET', 'bulkhttppost.asp', [
-            'query' => $query
+            'query' => $query,
         ]);
 
-        if($response->getStatusCode() == 200){
+        if ($response->getStatusCode() == 200) {
             $content = $response->getBody()->getContents();
 
-            if($content == '20')
+            if ($content == '20') {
                 throw new MessageException('Mesaj metniniz hatalı veya standart maximum karakter sayısını geçiyor', 20);
-            elseif($content=='30')
+            } elseif ($content == '30') {
                 throw new AuthException('Geçersiz kullanıcı adı veya şifre yada Api erişiniz bulunmamakta', 30);
-            elseif($content=='40')
+            } elseif ($content == '40') {
                 throw new HeaderException('Mesaj başlığınız sistemde tanımlı değil', 40);
-            elseif($content=='70')
+            } elseif ($content == '70') {
                 throw new ParameterException('Gönderim parametreleri hatalı', 70);
+            }
 
-            $exp=explode(' ',$content);
+            $exp = explode(' ', $content);
 
             return $exp[1];
         } else {
